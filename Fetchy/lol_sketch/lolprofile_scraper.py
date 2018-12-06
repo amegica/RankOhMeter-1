@@ -9,6 +9,16 @@ import csv
 from urlconnect import simple_get
 from urlconnect import is_good_response
 
+def get_leaderboard_table_head(soup):
+    table_head_list = []
+    table = soup.find("table",{"class":"table table1 s-c-table lb-table"})
+    table_head = table.find('thead')
+    rows = table_head.find_all('tr')
+    for row in rows:
+        cols = row.find_all('td')
+        table_head_list = [elem.text.strip() for elem in cols]
+    return table_head_list
+
 def get_current_leaderboard(soup):
     current_players_list = []
     table = soup.find("table",{"class":"table table1 s-c-table lb-table"})
@@ -25,10 +35,20 @@ def get_leaderboard(root_url = str(), region = str()):
     full_url = root_url + region + '/' # after / there will be the number of the page appended
     page_number = 0
     exit_loop = False
+    header_added = False
     while True:
         raw_html = simple_get(full_url + str(page_number))
         soup = BeautifulSoup(raw_html, 'html.parser')
         current_leaderboard = get_current_leaderboard(soup)
+
+        if header_added is False:
+            csv_header = get_leaderboard_table_head(soup)
+            with open('output.csv', 'a+') as output_file:
+                for item in csv_header:
+                    item = item.replace(',', '')
+                    output_file.write(str(item) + ',')
+                output_file.write('\n')
+            header_added = True
 
         #check if we get to the end of leaderboard
         for current_list in current_leaderboard:
@@ -47,8 +67,6 @@ def get_leaderboard(root_url = str(), region = str()):
                 output_file.write('\n')
         print(page_number)
         page_number += 1
-
-## 22 486 EUNE
 
 # https://lolprofile.net/leaderboards
 
